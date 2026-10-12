@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plac zabaw: drzewa decyzyjne</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="{% static 'static/core/css/style.css' %}">
+</head>
+<body>
+<header class="topbar">
+  <h1 data-tip="Aplikacja edukacyjna pokazująca, jak drzewo decyzyjne uczy się reguł na podstawie danych. Wybierz model, dane i parametry, a następnie kliknij Trenuj model.">Plac zabaw: drzewa decyzyjne</h1>
+</header>
+
+<main class="layout">
+  <form class="controls" method="get" action="#wynik">
+    <section class="block" data-tip="Blok 1: wybór modelu uczenia. Model to algorytm, który na podstawie danych uczy się przewidywać klasę próbki.">
+      <h2>1. Model uczenia</h2>
+      {% for model in models %}
+      <div class="model-item">
+        <label class="tile" data-tip="{{ model.description }}">
+          <input type="radio" name="model" value="{{ model.key }}"{% if model.selected %} checked{% endif %}>
+          <span>{{ model.name }}</span>
+        </label>
+        <p class="info" data-tip="Opis modelu: {{ model.name }}.">{{ model.description }}</p>
+        <h3 data-tip="Hiperparametry sterują sposobem uczenia i złożonością drzewa. Nie są częścią danych, tylko ustawieniami algorytmu. Używane są parametry zaznaczonego modelu.">Parametry modelu</h3>
+        {% for field in model.params %}
+        <div class="field" data-tip="{{ field.tip }}">
+          {% if field.type == 'choice' %}
+          <span class="field-label">{{ field.label }}</span>
+          <div class="tiles">
+            {% for choice in field.choices %}
+            <label class="tile" data-tip="{{ choice.tip }}">
+              <input type="radio" name="{{ field.name }}" value="{{ choice.value }}"{% if choice.selected %} checked{% endif %}>
+              <span>{{ choice.label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          {% else %}
+          <label for="{{ field.id }}">{{ field.label }} ({{ field.min }} do {{ field.max }})</label>
+          <input type="number" id="{{ field.id }}" name="{{ field.name }}" min="{{ field.min }}" max="{{ field.max }}" step="{{ field.step }}" value="{{ field.value }}">
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </section>
+
+    <section class="block" data-tip="Blok 2: wybór danych wejściowych. To przykłady, na których model się uczy, a potem jest oceniany.">
+      <h2>2. Dane wejściowe</h2>
+      <div class="tiles dataset-tiles">
+        {% for dataset in datasets %}
+        <label class="tile{% if dataset.selected %} applied{% endif %}" data-tip="{{ dataset.tip }}">
+          <input type="radio" name="dataset" value="{{ dataset.key }}"{% if dataset.selected %} checked{% endif %}>
+          <span>{{ dataset.name }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="applied_dataset" value="{{ applied_dataset }}">
+      <p class="info" data-tip="Liczba próbek (wierszy), liczba cech (kolumn z liczbami) oraz klasy, które model ma rozpoznawać.">{{ dataset_info }}</p>
+      <p class="note" data-tip="Zmiana zbioru działa po kliknięciu Trenuj model. Wtedy odświeżą się też lista cech i podgląd danych.">Wybrano inny zbiór danych. Lista cech i podgląd odświeżą się po kliknięciu Trenuj model.</p>
+      <label class="check" data-tip="Pokazuje 5 pierwszych wierszy wybranego zbioru, z uwzględnieniem modyfikacji z bloku 3. Podgląd pojawi się po kliknięciu Trenuj model.">
+        <input type="checkbox" name="preview" value="1"{% if show_preview %} checked{% endif %}>
+        <span>Pokaż 5 pierwszych wierszy danych</span>
+      </label>
+    </section>
+
+    <section class="block" data-tip="Blok 3: modyfikacja danych. Możesz wybrać cechy, zmienić podział na dane treningowe i testowe oraz dodać szum.">
+      <h2>3. Modyfikacja danych</h2>
+      <h3 data-tip="Cechy to kolumny z liczbami opisującymi każdą próbkę. Model używa tylko zaznaczonych cech. Jeśli nie zaznaczysz żadnej, zostaną użyte wszystkie.">Cechy użyte do uczenia</h3>
+      <div class="feature-list">
+        {% for feature in features %}
+        <label class="check" data-tip="{{ feature.tip }}">
+          <input type="checkbox" name="features" value="{{ feature.index }}"{% if feature.checked %} checked{% endif %}>
+          <span>{{ feature.name }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      {% for control in controls %}
+      <div class="field" data-tip="{{ control.tip }}">
+        <label for="{{ control.name }}">{{ control.label }} ({{ control.min }} do {{ control.max }})</label>
+        <input type="number" id="{{ control.name }}" name="{{ control.name }}" min="{{ control.min }}" max="{{ control.max }}" step="{{ control.step }}" value="{{ control.value }}">
+      </div>
+      {% endfor %}
+    </section>
+
+    <button type="submit" class="primary" data-tip="Uruchamia uczenie wybranego modelu na danych treningowych i ocenia go na danych testowych. Wynik pojawi się obok lub poniżej.">Trenuj model</button>
+    {% for message in messages %}
+    <p class="status" role="status" data-tip="Komunikat aplikacji: informuje o zmianach wprowadzonych automatycznie.">{{ message }}</p>
+    {% endfor %}
+  </form>
+
+  <div class="results" id="wynik">
+    {% if error %}
+    <p class="status error" role="alert" data-tip="Komunikat o błędzie: pokazuje, dlaczego nie udało się wytrenować modelu.">{{ error }}</p>
+    {% endif %}
+
+    {% if preview %}
+    <section class="result-block" data-tip="Podgląd danych: pierwsze 5 wierszy. Każdy wiersz to jedna próbka, kolumny to cechy, a ostatnia kolumna to klasa, którą model ma przewidywać.">
+      <h2>Podgląd danych</h2>
+      <p class="info">{{ preview.note }}</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              {% for column in preview.columns %}
+              <th data-tip="{{ column.tip }}">{{ column.name }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in preview.rows %}
+            <tr>
+              {% for value in row %}
+              <td>{{ value }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if metrics %}
+    <section class="result-block" data-tip="Wynik uczenia: jakość modelu na danych testowych i treningowych oraz rozmiar drzewa.">
+      <h2>Wyniki uczenia</h2>
+      <div class="metrics">
+        {% for metric in metrics %}
+        <div class="metric" data-tip="{{ metric.tip }}"><strong>{{ metric.value }}</strong><span>{{ metric.label }}</span></div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if selected_node %}
+    <section class="result-block" id="szczegoly" data-tip="Szczegóły wybranego węzła drzewa: cecha, próg, liczba próbek, rozkład klas i ścieżka od korzenia.">
+      <h2>Szczegóły: {{ selected_node.title }}</h2>
+      <dl>
+        {% for row in selected_node.rows %}
+        <dt>{{ row.key }}</dt>
+        <dd>{{ row.value }}</dd>
+        {% endfor %}
+      </dl>
+      <a class="button" href="{{ selected_node.close_href }}" data-tip="Zamyka szczegóły węzła i odznacza węzeł na rysunku.">Zamknij szczegóły</a>
+    </section>
+    {% endif %}
+
+    {% if tree %}
+    <section class="result-block" data-tip="Drzewo decyzyjne wytrenowanego modelu. Najedź na element rysunku, aby zobaczyć jego opis.">
+      <h2 data-tip="Wizualizacja drzewa: korzeń jest na górze, a liście na dole. Najedź na element, aby zobaczyć opis, a kliknij węzeł, aby zobaczyć jego szczegóły.">Drzewo decyzyjne</h2>
+      {% if tree.note %}
+      <p class="info" data-tip="Informacja o tym, ile poziomów drzewa pokazuje rysunek.">{{ tree.note }}</p>
+      {% endif %}
+      <div class="tree-scroll" data-tip="Rysunek drzewa. Przewiń go, jeśli jest szerszy niż ekran.">
+        <div class="tree-canvas" style="width: {{ tree.width }}px; height: {{ tree.height }}px;">
+          {{ tree.svg|safe }}
+          {% for node in tree.nodes %}
+          <a class="node-link{% if node.selected %} selected{% endif %}" id="link{{ node.id }}" href="{{ node.href }}" aria-label="{{ node.label }}" data-tip="{{ node.tip }}" style="left: {{ node.left }}%; top: {{ node.top }}%; width: {{ node.width }}%; height: {{ node.height }}%;"></a>
+          {% endfor %}
+          {% for edge in tree.edges %}
+          <span class="edge-tip" data-tip="{{ edge.tip }}" style="left: {{ edge.left }}%; top: {{ edge.top }}%; width: {{ edge.width }}%; height: {{ edge.height }}%;"></span>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="legend">
+        <span data-tip="Węzeł decyzyjny: zadaje pytanie o jedną cechę, na przykład czy cecha &lt;= próg. W zależności od odpowiedzi próbka idzie w lewo lub w prawo."><span class="swatch sw-node"></span>węzeł decyzyjny</span>
+        <span data-tip="Liść: węzeł końcowy. Podaje klasę, którą model przypisze próbkom, które tu trafią."><span class="swatch sw-leaf"></span>liść (klasa)</span>
+        {% if tree.truncated %}
+        <span data-tip="Węzeł, którego poddrzewo zostało ukryte, aby rysunek pozostał czytelny. Pokazywane jest tylko kilka pierwszych poziomów."><span class="swatch sw-collapsed"></span>ukryte poddrzewo</span>
+        {% endif %}
+        <span data-tip="Etykieta na gałęzi mówi, czy warunek z węzła nadrzędnego jest spełniony: tak (próbka idzie w lewo) lub nie (próbka idzie w prawo).">gałąź: tak lub nie</span>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</main>
+</body>
+</html>
