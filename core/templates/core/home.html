@@ -20,14 +20,14 @@
         <h2>Drzewo decyzyjne</h2>
         <p class="hint">Najedź kursorem na prostokąt, aby zobaczyć szczegóły węzła.</p>
         <div class="tree-scroll">
-            {{ tree_html|safe }}
+            {{tree_html|safe}}
         </div>
         <div class="legend">
             <span class="swatch swatch-node">Legenda: </span>
         </div>
     </section>
     <div class="grid">
-        <section class="card">
+        <section class="data">
             <h2>Dane użyte do uczenia</h2>
             <table>
                 <tbody>
@@ -41,7 +41,7 @@
             </table>
         </section>
 
-        <section class="card">
+        <section class="param">
             <h2>Parametry modelu</h2>
             <table>
                 <tbody>
@@ -55,7 +55,7 @@
             </table>
         </section>
 
-        <section class="card">
+        <section class="results">
             <h2>Wyniki uczenia</h2>
             <table>
                 <tbody>
@@ -69,7 +69,7 @@
             </table>
         </section>
 
-        <section class="card">
+        <section class="import">
             <h2>Ważność cech</h2>
             <table>
                 <tbody>
@@ -78,7 +78,7 @@
                     <th>{{ item.name }}</th>
                     <td>{{ item.percent }}%</td>
                     <td class="bar-cell">
-                        <div class="bar" style="width {{ item.width }}%"></div>
+                        <div class="bar" style="width: {{ item.width }}%;"></div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -87,7 +87,7 @@
         </section>
     </div>
 
-    <section class="card">
+    <section class="opis">
         <h2>ALgorytm CART</h2>
         <p class="note">Algorytm CART w każdym węźle wybiera cechę i próg, które najlepiej rozdzielają klasy, czyli dają
             najmniejszą nieczystość 'Gini'. Powtarza to, aż osiągnie maksymalną głębokość albo węzły zawierające próbki
