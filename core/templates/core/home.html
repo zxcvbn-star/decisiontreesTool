@@ -11,87 +11,133 @@
 <body>
 <header class="topbar">
     <h1>Nauczone drzewo decyzyjne</h1>
-    <h2>Drzewo klasy DecisionTreeClassifier z biblioteki scikit-learn, nauczone na zbiorze Iris i narysowane
-        w bibliotece Plotly.</h2>
 </header>
 
 <main class="page">
-    <section class="card">
+    <section class="card card-form">
+        <h2>Parametry uczenia</h2>
+        <form class="params-form" method="get" action="#wyniki">
+            {% if has_errors %}
+            <p class="form-error">Popraw zaznaczone pola. Do czasu poprawy wyświetlany jest wynik dla wartości
+                domyślnych.</p>
+            {% endif %}
+            <div class="form-layout">
+                <div class="models">
+                    {{ form.model.errors }}
+                    {% for section in model_sections %}
+                    <fieldset class="model-box">
+                        <legend>
+                            <label class="radio">
+                                <input type="radio" name="model" value="{{ section.key }}" {{ section.checked }}>
+                                <span>{{ section.name }}</span>
+                            </label>
+                        </legend>
+                        <p class="help">{{ section.description }}</p>
+                        <div class="fields">
+                            {% for field in section.fields %}
+                            <div class="field">
+                                {{ field.label_tag }}
+                                {{ field }}
+                                {{ field.errors }}
+                                <small>{{ field.help_text }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                    {% endfor %}
+                </div>
+                <fieldset class="model-box">
+                    <legend>Dane i podział</legend>
+                    <div class="fields">
+                        {% for field in data_fields %}
+                        <div class="field">
+                            {{ field.label_tag }}
+                            {{ field }}
+                            {{ field.errors }}
+                            <small>{{ field.help_text }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+            </div>
+            <div class="actions">
+                <button type="submit">Trenuj model</button>
+                <a class="reset" href="{% url 'home' %}">Przywróć wartości domyślne</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card card-results" id="wyniki">
+        <h2>Wyniki uczenia</h2>
+        <table>
+            <tbody>
+            {% for row in result_rows %}
+            <tr>
+                <th>{{ row.label }}</th>
+                <td>{{ row.value }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="card card-tree">
         <h2>Drzewo decyzyjne</h2>
-        <p class="hint">Najedź kursorem na prostokąt, aby zobaczyć szczegóły węzła.</p>
-        <div class="tree-scroll">
-            {{tree_html|safe}}
-        </div>
-        <div class="legend">
-            <span class="swatch swatch-node">Legenda: </span>
+        <p class="hint">Cały rysunek mieści się w oknie. Kółko myszy przybliża, przeciągnięcie przesuwa widok, a dwuklik
+            przywraca cały widok. Najedź kursorem na węzeł lub liść, aby zobaczyć szczegóły.</p>
+        <div class="tree-window">
+            {{ tree_html|safe }}
         </div>
     </section>
-    <div class="grid">
-        <section class="data">
-            <h2>Dane użyte do uczenia</h2>
-            <table>
-                <tbody>
-                {% for row in data_rows %}
-                <tr>
-                    <th>{{ row.label }}</th>
-                    <td>{{ row.value }}</td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </section>
 
-        <section class="param">
-            <h2>Parametry modelu</h2>
-            <table>
-                <tbody>
-                {% for row in param_rows %}
-                <tr>
-                    <th>{{ row.label }}</th>
-                    <td>{{ row.value }}</td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </section>
+    <section class="card card-data">
+        <h2>Dane użyte do uczenia</h2>
+        <table>
+            <tbody>
+            {% for row in data_rows %}
+            <tr>
+                <th>{{ row.label }}</th>
+                <td>{{ row.value }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
 
-        <section class="results">
-            <h2>Wyniki uczenia</h2>
-            <table>
-                <tbody>
-                {% for row in result_rows %}
-                <tr>
-                    <th>{{ row.label }}</th>
-                    <td>{{ row.value }}</td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </section>
+    <section class="card card-params">
+        <h2>Parametry modelu</h2>
+        <table>
+            <tbody>
+            {% for row in param_rows %}
+            <tr>
+                <th>{{ row.label }}</th>
+                <td>{{ row.value }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
 
-        <section class="import">
-            <h2>Ważność cech</h2>
-            <table>
-                <tbody>
-                {% for item in importances %}
-                <tr>
-                    <th>{{ item.name }}</th>
-                    <td>{{ item.percent }}%</td>
-                    <td class="bar-cell">
-                        <div class="bar" style="width: {{ item.width }}%;"></div>
-                    </td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </section>
-    </div>
+    <section class="card card-importances">
+        <h2>Ważność cech</h2>
+        <table>
+            <tbody>
+            {% for item in importances %}
+            <tr>
+                <th>{{ item.name }}</th>
+                <td>{{ item.percent }}%</td>
+                <td class="bar-cell">
+                    <div class="bar" style="width: {{ item.width }}%;"></div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
 
-    <section class="opis">
-        <h2>ALgorytm CART</h2>
-        <p class="note">Algorytm CART w każdym węźle wybiera cechę i próg, które najlepiej rozdzielają klasy, czyli dają
-            najmniejszą nieczystość 'Gini'. Powtarza to, aż osiągnie maksymalną głębokość albo węzły zawierające próbki
-            jednej klasy. Dokładność treningowa wyraźnie wyższa od testowej oznaczałaby przeuczenie.</p>
+    <section class="card card-note">
+        <h2>{{ algorithm_title }}</h2>
+        <p class="note">{{ algorithm_note }}</p>
     </section>
 </main>
 </body>
