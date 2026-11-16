@@ -22,9 +22,9 @@ CONFIG = {
     'displaylogo': False,
     'responsive': True,
     'doubleClick': 'reset',
+    'showSendToCloud': False,
     'modeBarButtonsToRemove': ['select2d', 'lasso2d'],
 }
-
 
 def esc(text):
     return html.escape(str(text), quote=False)

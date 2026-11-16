@@ -7,31 +7,39 @@
     <title>Drzewa decyzyjne</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        @supports selector(:has(*)) {
+            .model-box[data-model] { display: none; }
+            {% for section in model_sections %}
+            .params-form:has(#id_model option[value="{{ section.key }}"]:checked) .model-box[data-model="{{ section.key }}"] { display: block; }
+            {% endfor %}
+        }
+    </style>
 </head>
 <body>
 <header class="topbar">
     <h1>Nauczone drzewo decyzyjne</h1>
+    <h2>{{ subtitle }}</h2>
 </header>
 
 <main class="page">
     <section class="card card-form">
         <h2>Parametry uczenia</h2>
+        <p class="help">Wybierz model z listy, ustaw jego parametry i kliknij Trenuj model.</p>
         <form class="params-form" method="get" action="#wyniki">
             {% if has_errors %}
-            <p class="form-error">Popraw zaznaczone pola. Do czasu poprawy wyświetlany jest wynik dla wartości
-                domyślnych.</p>
+            <p class="form-error">Popraw zaznaczone pola. Do czasu poprawy wyświetlany jest wynik dla wartości domyślnych.</p>
             {% endif %}
+            <div class="field model-picker">
+                {{ form.model.label_tag }}
+                {{ form.model }}
+                {{ form.model.errors }}
+            </div>
             <div class="form-layout">
                 <div class="models">
-                    {{ form.model.errors }}
                     {% for section in model_sections %}
-                    <fieldset class="model-box">
-                        <legend>
-                            <label class="radio">
-                                <input type="radio" name="model" value="{{ section.key }}" {{ section.checked }}>
-                                <span>{{ section.name }}</span>
-                            </label>
-                        </legend>
+                    <fieldset class="model-box" data-model="{{ section.key }}">
+                        <legend>{{ section.name }}</legend>
                         <p class="help">{{ section.description }}</p>
                         <div class="fields">
                             {% for field in section.fields %}
@@ -83,8 +91,8 @@
 
     <section class="card card-tree">
         <h2>Drzewo decyzyjne</h2>
-        <p class="hint">Cały rysunek mieści się w oknie. Kółko myszy przybliża, przeciągnięcie przesuwa widok, a dwuklik
-            przywraca cały widok. Najedź kursorem na węzeł lub liść, aby zobaczyć szczegóły.</p>
+        <p class="caption">{{ tree_caption }}</p>
+        <p class="hint">Cały rysunek mieści się w oknie. Kółko myszy przybliża, przeciągnięcie przesuwa widok, a dwuklik przywraca cały widok. Najedź kursorem na węzeł lub liść, aby zobaczyć szczegóły.</p>
         <div class="tree-window">
             {{ tree_html|safe }}
         </div>

@@ -8,7 +8,14 @@ INT_MESSAGES = {
     'min_value': 'Wartość nie może być mniejsza niż %(limit_value)s.',
     'max_value': 'Wartość nie może być większa niż %(limit_value)s.',
 }
+FLOAT_MESSAGES = {
+    'required': 'To pole jest wymagane.',
+    'invalid': 'Wpisz liczbę (kropka jako separator dziesiętny).',
+    'min_value': 'Wartość nie może być mniejsza niż %(limit_value)s.',
+    'max_value': 'Wartość nie może być większa niż %(limit_value)s.',
+}
 CHOICE_MESSAGES = {
+    'required': 'To pole jest wymagane.',
     'invalid_choice': 'Wybierz jedną z dostępnych opcji.',
 }
 
@@ -24,6 +31,27 @@ def field_name(model_key, param_name):
     return f'{model_key}__{param_name}'
 
 
+def with_defaults(data):
+    if data is None:
+        return None
+    values = data.copy()
+    if not values.get('model'):
+        values['model'] = DEFAULT_MODEL
+    selected = values.get('model')
+    if 'test_size' not in values:
+        values['test_size'] = str(DEFAULT_TEST_SIZE)
+    if 'random_state' not in values:
+        values['random_state'] = str(DEFAULT_RANDOM_STATE)
+    for model_class in MODEL_CLASSES:
+        for spec in model_class.parameters:
+            name = field_name(model_class.key, spec['name'])
+            missing = name not in values
+            empty = values.get(name, '') == ''
+            if missing or (empty and model_class.key != selected):
+                values[name] = str(spec['default'])
+    return values
+
+
 def build_field(spec):
     if spec['kind'] == 'choice':
         return forms.ChoiceField(
@@ -33,6 +61,17 @@ def build_field(spec):
             required=False,
             help_text=spec['help'],
             error_messages=CHOICE_MESSAGES,
+        )
+    if spec['kind'] == 'float':
+        return forms.FloatField(
+            label=spec['label'],
+            min_value=spec['min'],
+            max_value=spec['max'],
+            initial=spec['default'],
+            required=False,
+            help_text=spec['help'],
+            error_messages=FLOAT_MESSAGES,
+            widget=forms.NumberInput(attrs={'step': str(spec['step'])}),
         )
     return forms.IntegerField(
         label=spec['label'],
@@ -69,9 +108,9 @@ class TreeForm(forms.Form):
         error_messages=INT_MESSAGES,
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data=None, *args, **kwargs):
         kwargs['label_suffix'] = ''
-        super().__init__(*args, **kwargs)
+        super().__init__(with_defaults(data), *args, **kwargs)
         for model_class in MODEL_CLASSES:
             for spec in model_class.parameters:
                 self.fields[field_name(model_class.key, spec['name'])] = build_field(spec)
@@ -89,27 +128,16 @@ class TreeForm(forms.Form):
                     self.errors.pop(name, None)
         return cleaned
 
-    def selected_model_key(self):
-        value = self['model'].value()
-        if value in MODELS:
-            return value
-        return DEFAULT_MODEL
-
     def model_sections(self):
-        selected = self.selected_model_key()
         sections = []
         for model_class in MODEL_CLASSES:
             fields = []
             for spec in model_class.parameters:
                 fields.append(self[field_name(model_class.key, spec['name'])])
-            checked = ''
-            if model_class.key == selected:
-                checked = 'checked'
             sections.append({
                 'key': model_class.key,
                 'name': model_class.name,
                 'description': model_class.description,
-                'checked': checked,
                 'fields': fields,
             })
         return sections

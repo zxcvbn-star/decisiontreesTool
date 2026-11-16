@@ -7,6 +7,7 @@ class BaseTreeModel:
     algorithm_title = ''
     algorithm_note = ''
     parameters = ()
+    fixed_params = ()
 
     def __init__(self, params=None, random_state=42):
         if params is None:
@@ -48,6 +49,14 @@ class BaseTreeModel:
 
     def feature_importances(self):
         return list(self.estimator.feature_importances_)
+
+    def clamp_index(self, total):
+        index = int(self.params.get('tree_index', 1))
+        if index < 1:
+            index = 1
+        if index > total:
+            index = total
+        return index
 
     def export_nodes(self):
         nodes = self.build_nodes()
